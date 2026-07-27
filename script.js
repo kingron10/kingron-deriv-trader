@@ -7,5 +7,5 @@ const status = document.getElementById("status");
 connectBtn.addEventListener("click", () => {
     status.textContent = "Redirecting to Deriv...";
     window.location.href =
-        `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+        `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&l=EN&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 });
