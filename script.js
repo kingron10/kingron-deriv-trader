@@ -35,7 +35,16 @@ if (hash.includes("access_token=")) {
         const data = JSON.parse(event.data);
 
         if (data.msg_type === "authorize") {
-            balance.textContent = data.authorize.balance + " " + data.authorize.currency;
+    const account = data.authorize;
+
+    status.innerHTML = `
+        ✅ Connected<br>
+        Account ID: ${account.loginid}<br>
+        Account Type: ${account.is_virtual ? "Demo" : "Real"}<br>
+        Currency: ${account.currency}
+    `;
+
+    balance.textContent = account.balance + " " + account.currency;
         }
 
         if (data.error) {
