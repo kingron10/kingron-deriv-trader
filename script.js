@@ -4,7 +4,7 @@ const REDIRECT_URI = "https://kingron10.github.io/kingron-deriv-trader/";
 const connectBtn = document.getElementById("connect");
 const status = document.getElementById("status");
 const balance = document.getElementById("balance");
-
+const accountId = document.getElementById("accountId");
 connectBtn.addEventListener("click", () => {
     status.textContent = "Redirecting to Deriv...";
 
@@ -35,6 +35,9 @@ if (hash.includes("access_token=")) {
         const data = JSON.parse(event.data);
 
         if (data.msg_type === "authorize") {
+    accountId.textContent = data.authorize.loginid;
+    ws.send(JSON.stringify({ balance: 1 }));
+        }
     const account = data.authorize;
 
     status.innerHTML = `
