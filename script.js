@@ -1,13 +1,11 @@
+const APP_ID = "33WKSW7cKl67wCLdJFnSk";
+const REDIRECT_URI = "https://kingron10.github.io/kingron10/";
+
 const connectBtn = document.getElementById("connect");
 const status = document.getElementById("status");
-const balance = document.getElementById("balance");
 
 connectBtn.addEventListener("click", () => {
-    status.textContent = "Connecting...";
-    balance.textContent = "--";
-
-    // We'll connect to the Deriv API in the next step.
-    setTimeout(() => {
-        status.textContent = "Ready to connect to Deriv API";
-    }, 1000);
+    status.textContent = "Redirecting to Deriv...";
+    window.location.href =
+        `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 });
