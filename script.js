@@ -21,12 +21,16 @@ connectBtn.onclick = () => {
     );
 
     ws.onopen = () => {
+        console.log("WebSocket opened");
+
         ws.send(JSON.stringify({
             authorize: token
         }));
     };
 
     ws.onmessage = (event) => {
+        console.log(event.data);
+
         const data = JSON.parse(event.data);
 
         if (data.error) {
