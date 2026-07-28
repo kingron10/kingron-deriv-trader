@@ -56,14 +56,24 @@ if (savedToken) {
             status.textContent = "✅ Connected";
             accountId.textContent = data.authorize.loginid;
 
+            // Request account balance
             ws.send(JSON.stringify({
                 balance: 1
+            }));
+
+            // Subscribe to live ticks
+            ws.send(JSON.stringify({
+                ticks: "R_100"
             }));
         }
 
         if (data.msg_type === "balance") {
             balance.textContent =
                 data.balance.balance + " " + data.balance.currency;
+        }
+
+        if (data.msg_type === "tick") {
+            document.getElementById("tick").textContent = data.tick.quote;
         }
     };
 
