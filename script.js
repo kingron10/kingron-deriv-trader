@@ -65,7 +65,8 @@ connectBtn.onclick = () => {
     };
 
     ws.onclose = (event) => {
-        status.textContent = "Disconnected (Code: " + event.code + ")";
+        status.textContent =
+            "Disconnected (Code: " + event.code + ", Reason: " + event.reason + ")";
     };
 };
 
