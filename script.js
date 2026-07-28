@@ -30,6 +30,7 @@ connectBtn.onclick = () => {
         const data = JSON.parse(event.data);
 
         if (data.error) {
+            console.log(data.error);
             status.textContent = "❌ " + data.error.message;
             return;
         }
@@ -38,7 +39,10 @@ connectBtn.onclick = () => {
             status.textContent = "✅ Connected";
             accountId.textContent = data.authorize.loginid;
 
-            ws.send(JSON.stringify({ balance: 1 }));
+            ws.send(JSON.stringify({
+                balance: 1
+            }));
+
             ws.send(JSON.stringify({
                 ticks: "R_100",
                 subscribe: 1
@@ -55,13 +59,20 @@ connectBtn.onclick = () => {
         }
     };
 
-    ws.onclose = () => {
-        status.textContent = "Disconnected";
+    ws.onerror = (error) => {
+        console.log(error);
+        status.textContent = "❌ Connection Error";
+    };
+
+    ws.onclose = (event) => {
+        status.textContent = "Disconnected (Code: " + event.code + ")";
     };
 };
 
 logoutBtn.onclick = () => {
-    if (ws) ws.close();
+    if (ws) {
+        ws.close();
+    }
 
     status.textContent = "Ready to connect to Deriv API";
     balance.textContent = "--";
