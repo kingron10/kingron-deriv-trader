@@ -6,6 +6,11 @@ const status = document.getElementById("status");
 const balance = document.getElementById("balance");
 const accountId = document.getElementById("accountId");
 const tick = document.getElementById("tick");
+const debug = document.getElementById("debug");
+
+function log(message) {
+    debug.textContent += message + "\n";
+}
 
 let ws = null;
 
