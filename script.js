@@ -1,4 +1,4 @@
-const APP_ID = "33WKSW7cKl67wCLdJFnSk";
+const APP_ID = "33XacCf580jM6g1WBhdIV";
 const REDIRECT_URI = "https://kingron10.github.io/kingron-deriv-trader/";
 
 const connectBtn = document.getElementById("connect");
