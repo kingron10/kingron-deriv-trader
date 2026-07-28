@@ -7,78 +7,67 @@ const status = document.getElementById("status");
 const balance = document.getElementById("balance");
 const accountId = document.getElementById("accountId");
 
-// Connect button
-connectBtn.addEventListener("click", () => {
-    status.textContent = "Redirecting to Deriv...";
-
-    const oauthUrl =
+// Connect to Deriv
+connectBtn.onclick = () => {
+    const url =
         `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
-    window.location.href = oauthUrl;
-});
+    window.location.href = url;
+};
 
-// Logout button
-logoutBtn.addEventListener("click", () => {
-    window.location.hash = "";
-    status.textContent = "Logged out";
-    balance.textContent = "--";
-    accountId.textContent = "--";
-});
+// Logout
+logoutBtn.onclick = () => {
+    localStorage.removeItem("deriv_token");
+    window.location.href = REDIRECT_URI;
+};
 
-// Check if Deriv redirected back with an access token
-const hash = window.location.hash;
+// Read OAuth token
+const hash = new URLSearchParams(window.location.hash.substring(1));
+const token = hash.get("access_token");
 
-if (hash.includes("access_token=")) {
-    const params = new URLSearchParams(hash.substring(1));
-    const token = params.get("access_token");
+if (token) {
+    localStorage.setItem("deriv_token", token);
+}
 
+const savedToken = localStorage.getItem("deriv_token");
+
+if (savedToken) {
     status.textContent = "Connecting...";
 
-    const ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+    const ws = new WebSocket(
+        `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`
+    );
 
     ws.onopen = () => {
         ws.send(JSON.stringify({
-            authorize: token
+            authorize: savedToken
         }));
     };
 
-    ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
+    ws.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
 
         if (data.error) {
-            status.textContent = "❌ " + data.error.message;
+            status.textContent = data.error.message;
             return;
         }
 
         if (data.msg_type === "authorize") {
-            const account = data.authorize;
+            status.textContent = "✅ Connected";
+            accountId.textContent = data.authorize.loginid;
 
-            accountId.textContent = account.loginid;
-
-            status.innerHTML = `
-                ✅ Connected<br>
-                Account Type: ${account.is_virtual ? "Demo" : "Real"}<br>
-                Currency: ${account.currency}
-            `;
-
-            // Request live balance
             ws.send(JSON.stringify({
-                balance: 1,
-                subscribe: 1
+                balance: 1
             }));
         }
 
         if (data.msg_type === "balance") {
             balance.textContent =
-                `${data.balance.balance} ${data.balance.currency}`;
+                data.balance.balance + " " + data.balance.currency;
         }
     };
 
-    ws.onerror = () => {
-        status.textContent = "❌ Connection failed";
-    };
-
     ws.onclose = () => {
-        console.log("WebSocket closed");
+        status.textContent = "Disconnected";
     };
 }
