@@ -26,7 +26,7 @@ connectBtn.onclick = () => {
     );
 
     ws.onopen = () => {
-        console.log("WebSocket opened");
+        log("WebSocket opened");
 
         ws.send(JSON.stringify({
             authorize: token
@@ -34,12 +34,12 @@ connectBtn.onclick = () => {
     };
 
     ws.onmessage = (event) => {
-        console.log(event.data);
+        log(event.data);
 
         const data = JSON.parse(event.data);
 
         if (data.error) {
-            console.log(data.error);
+            log(JSON.stringify(data.error));
             status.textContent = "❌ " + data.error.message;
             return;
         }
@@ -69,11 +69,12 @@ connectBtn.onclick = () => {
     };
 
     ws.onerror = (error) => {
-        console.log(error);
+        log("WebSocket error");
         status.textContent = "❌ Connection Error";
     };
 
     ws.onclose = (event) => {
+        log("Closed: Code=" + event.code + ", Reason=" + event.reason);
         status.textContent =
             "Disconnected (Code: " + event.code + ", Reason: " + event.reason + ")";
     };
@@ -88,4 +89,5 @@ logoutBtn.onclick = () => {
     balance.textContent = "--";
     accountId.textContent = "--";
     tick.textContent = "Waiting...";
+    debug.textContent = "";
 };
