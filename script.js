@@ -1,4 +1,4 @@
-const APP_ID = "1089";
+const APP_ID = "33XacCf580jM6g1WBhdIV";
 
 const connectBtn = document.getElementById("connect");
 const logoutBtn = document.getElementById("logout");
