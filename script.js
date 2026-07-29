@@ -7,8 +7,12 @@
 const CONFIG = {
     APP_ID: '33XacCf580jM6glWBhdIV',
     SYMBOL: 'R_100', // Volatility 100 Index
+    const CONFIG = {
+    APP_ID: '33XacCf580jM6glWBhdIV',
+    SYMBOL: 'R_100',
     WS_URL: 'wss://ws.derivws.com/websockets/v3'
 };
+
 
 // --- GLOBAL STATE ---
 let ws = null;
