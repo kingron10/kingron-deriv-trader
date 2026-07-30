@@ -3,174 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kingron Deriv Trader</title>
+    <title>Kingron - Deriv Trader</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
-        .btn { padding: 10px 15px; margin: 5px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
-        .btn-green { background-color: #4CAF50; color: white; }
-        .btn-red { background-color: #f44336; color: white; }
-        .btn-blue { background-color: #008CBA; color: white; }
-        .card { background: #f9f9f9; padding: 10px; margin-top: 10px; border-left: 4px solid #008CBA; }
-        #logs { background: #111; color: #0f0; padding: 10px; height: 150px; overflow-y: scroll; font-family: monospace; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0e0e0e;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        h1 { margin-top: 0; color: #ff444f; }
+        .btn {
+            background-color: #ff444f;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .btn:hover { background-color: #e63946; }
+        .card {
+            background: #262626;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .tick-display {
+            font-size: 28px;
+            font-weight: bold;
+            color: #4caf50;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 
-    <h2>Kingron Deriv Trader</h2>
+<div class="container">
+    <h1>Kingron Deriv Trader</h1>
 
-    <!-- Auth Buttons -->
-    <button id="login-btn" class="btn btn-blue" onclick="loginWithDeriv()">Connect with Deriv</button>
-    <button id="logout-btn" class="btn btn-red" onclick="logout()" style="display:none;">Logout</button>
+    <!-- Login Button -->
+    <button id="loginBtn" class="btn" onclick="login()">Log In with Deriv</button>
 
-    <!-- User Information -->
-    <div class="card">
-        <p><strong>Status:</strong> <span id="status">Disconnected</span></p>
-        <p><strong>Account ID:</strong> <span id="account-id">Not Logged In</span></p>
-        <p><strong>Balance:</strong> <span id="balance">--</span></p>
+    <!-- User Account Details -->
+    <div class="card" id="userInfo" style="display: none;">
+        <h3>Account Status</h3>
+        <p><strong>Account ID:</strong> <span id="accountId">-</span></p>
+        <p><strong>Balance:</strong> <span id="balance">-</span></p>
     </div>
 
     <!-- Live Market Stream -->
     <div class="card">
-        <h3>Volatility 100 (1s) Index</h3>
-        <p>Current Price: <strong id="symbol-price">Waiting for data...</strong></p>
+        <h3>Live Volatility 100 Index (R_100)</h3>
+        <div class="tick-display" id="tickPrice">Connecting...</div>
     </div>
+</div>
 
-    <!-- Quick Actions -->
-    <div class="card">
-        <h3>Trade Execution</h3>
-        <button class="btn btn-green" onclick="buyContract('CALL')">Buy Rise / Higher</button>
-        <button class="btn btn-red" onclick="buyContract('PUT')">Buy Fall / Lower</button>
-    </div>
+<script>
+    // Configured with your registered App ID
+    const APP_ID = '33XVY2GPVVkcJtekabSF5'; 
+    const wsUrl = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
+    const ws = new WebSocket(wsUrl);
 
-    <!-- Debug Log -->
-    <h3>Console Log</h3>
-    <div id="logs"></div>
+    // 1. Handle OAuth Login
+    function login() {
+        const redirectUrl = encodeURIComponent(window.location.origin + window.location.pathname);
+        window.location.href = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&l=EN`;
+    }
 
-    <script>
-        // --- CONFIGURATION ---
-        // Your Registered App ID
-        const APP_ID = '33XacCf580jM6glWBhdIV'; 
-        
-        // Websocket and App State Variables
-        let ws;
-        let token = localStorage.getItem('deriv_token');
+    // 2. Extract Token from URL after OAuth Redirect
+    function getTokenFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('token1'); // First account token returned by Deriv
+    }
 
-        function log(msg) {
-            const logsDiv = document.getElementById('logs');
-            logsDiv.innerHTML += `> ${msg}<br>`;
-            logsDiv.scrollTop = logsDiv.scrollHeight;
-        }
+    // 3. WebSocket Connection Established
+    ws.onopen = () => {
+        console.log('Connected to Deriv WebSocket');
 
-        // --- STEP 1: LOGIN FLOW ---
-        function loginWithDeriv() {
-            // Redirect to Deriv OAuth URL with your specific App ID
-            window.location.href = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}`;
-        }
-
-        function logout() {
-            localStorage.clear();
-            window.location.reload();
-        }
-
-        // Parse token returned from Deriv after login redirect
-        function checkForOAuthToken() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlToken = urlParams.get('token1');
-            const urlAccount = urlParams.get('acct1');
-
-            if (urlToken) {
-                localStorage.setItem('deriv_token', urlToken);
-                localStorage.setItem('deriv_account', urlAccount);
-                // Clear token parameters from address bar to keep URL clean
-                window.history.replaceState({}, document.title, window.location.pathname);
-                token = urlToken;
+        // Keep connection active
+        setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ ping: 1 }));
             }
+        }, 30000);
+
+        // Check if user has returned from OAuth login
+        const token = getTokenFromURL();
+        if (token) {
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'block';
+            
+            // Authorize the session with token
+            ws.send(JSON.stringify({ authorize: token }));
         }
 
-        // --- STEP 2: WEBSOCKET ENGINE ---
-        function initWebSocket() {
-            ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+        // Subscribe to Volatility 100 Index real-time price ticks
+        ws.send(JSON.stringify({ ticks: 'R_100', subscribe: 1 }));
+    };
 
-            ws.onopen = () => {
-                document.getElementById('status').innerText = 'Connected';
-                log('WebSocket connection opened.');
+    // 4. Handle Incoming WebSocket Data
+    ws.onmessage = (event) => {
+        const response = JSON.parse(event.data);
 
-                // Subscribe to live tick stream (Public data request)
-                ws.send(JSON.stringify({ ticks: 'R_100', subscribe: 1 }));
-
-                // Authorize user if token is present in local storage
-                if (token) {
-                    ws.send(JSON.stringify({ authorize: token }));
-                    document.getElementById('login-btn').style.display = 'none';
-                    document.getElementById('logout-btn').style.display = 'inline-block';
-                }
-            };
-
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-
-                // Handle Authorization Response
-                if (data.msg_type === 'authorize') {
-                    if (data.error) {
-                        log(`Auth Error: ${data.error.message}`);
-                    } else {
-                        log(`Authenticated as ${data.authorize.loginid}`);
-                        document.getElementById('account-id').innerText = data.authorize.loginid;
-                        document.getElementById('balance').innerText = `${data.authorize.balance} ${data.authorize.currency}`;
-                    }
-                }
-
-                // Handle Live Price Ticks
-                if (data.msg_type === 'tick') {
-                    document.getElementById('symbol-price').innerText = data.tick.quote;
-                }
-
-                // Handle Buy Contract Response
-                if (data.msg_type === 'buy') {
-                    if (data.error) {
-                        log(`Trade Failed: ${data.error.message}`);
-                    } else {
-                        log(`Contract Purchased! ID: ${data.buy.contract_id}, Price: $${data.buy.buy_price}`);
-                    }
-                }
-            };
-
-            ws.onerror = (err) => log(`WebSocket Error: ${err}`);
-            ws.onclose = () => {
-                document.getElementById('status').innerText = 'Disconnected';
-                log('Connection closed. Reconnecting in 3s...');
-                setTimeout(initWebSocket, 3000); // Auto reconnect
-            };
+        // Authorize response (User Logged In)
+        if (response.msg_type === 'authorize' && response.authorize) {
+            document.getElementById('accountId').innerText = response.authorize.loginid;
+            document.getElementById('balance').innerText = `${response.authorize.balance} ${response.authorize.currency}`;
         }
 
-        // --- STEP 3: PLACING TRADES ---
-        function buyContract(type) {
-            if (!token) {
-                alert('Please connect your Deriv account first!');
-                return;
-            }
-
-            log(`Sending buy request for ${type}...`);
-            ws.send(JSON.stringify({
-                buy: 1,
-                price: 10, // Stake amount
-                parameters: {
-                    amount: 10,
-                    basis: 'stake',
-                    contract_type: type, // 'CALL' or 'PUT'
-                    currency: 'USD',
-                    duration: 5,
-                    duration_unit: 't', // 5 Ticks
-                    symbol: 'R_100'
-                }
-            }));
+        // Live Market Tick updates
+        if (response.msg_type === 'tick' && response.tick) {
+            document.getElementById('tickPrice').innerText = response.tick.quote;
         }
 
-        // --- INITIALIZATION ---
-        window.addEventListener('DOMContentLoaded', () => {
-            checkForOAuthToken();
-            initWebSocket();
-        });
-    </script>
+        if (response.error) {
+            console.error('Deriv API Error:', response.error.message);
+        }
+    };
+</script>
+
 </body>
 </html>
